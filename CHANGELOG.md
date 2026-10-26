@@ -10,6 +10,10 @@ For releases prior to this changelog, see the
 
 ## [Unreleased]
 
+---
+
+## [0.2.11] - 2026-10-26
+
 ### Added
 - `baguette press --button software-keyboard` toggles the on-screen keyboard for a focused text field. The same button name works over stdin and WebSocket. → [docs](docs/features/keyboard/README.md#software-keyboard) ([#127](https://github.com/tddworks/baguette/pull/127))
 
@@ -21,8 +25,6 @@ For releases prior to this changelog, see the
 * docs(skill): route the baguette skill by what the agent is doing by @hanrw in https://github.com/tddworks/baguette/pull/125
 * docs(domain): canonical model + a domain-first step in the feature skill by @hanrw in https://github.com/tddworks/baguette/pull/126
 * fix(duo): tap, drag and type on whichever panel is lit by @hanrw in https://github.com/tddworks/baguette/pull/124
-
-
 
 ---
 
@@ -152,7 +154,8 @@ For releases prior to this changelog, see the
 
 [0.1](docs/changelog/0.1.md)
 
-[Unreleased]: https://github.com/tddworks/baguette/compare/v0.2.10...HEAD
+[Unreleased]: https://github.com/tddworks/baguette/compare/v0.2.11...HEAD
+[0.2.11]: https://github.com/tddworks/baguette/compare/v0.2.10...v0.2.11
 [0.2.10]: https://github.com/tddworks/baguette/compare/v0.2.9...v0.2.10
 [0.2.9]: https://github.com/tddworks/baguette/compare/v0.2.8...v0.2.9
 [0.2.8]: https://github.com/tddworks/baguette/compare/v0.2.7...v0.2.8
