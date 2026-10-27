@@ -317,6 +317,102 @@ struct SharedHingeTests {
         w.cancel()
     }
 
+    final class Sweeps: @unchecked Sendable {
+        private let lock = NSLock()
+        private var storage: [String] = []
+        var log: [String] { lock.withLock { storage } }
+        func append(_ entry: String) { lock.withLock { storage.append(entry) } }
+        func record(_ event: HingeSweepEvent) {
+            switch event {
+            case .began(let sweep): append("began \(sweep.from)→\(sweep.to) over \(sweep.duration)")
+            case .ended(let delivery): append("ended \(delivery)")
+            }
+        }
+    }
+
+    /// A 3D book shows a sweep baguette plays as commanded rather than
+    /// as the guest reads it back, which can be seconds late.
+    @Test func `should tell sweep watchers the sweep as the motor plays it, then how it was delivered`() throws {
+        let inner = Inner()
+        let heard = Sweeps()
+        let motor = MockHingeMotor()
+        given(motor).fold(from: .any, to: .any, over: .any).willProduce { _, _, _ in heard.append("motor") }
+        let shared = SharedHinge(inner: inner.hinge, motor: motor)
+        let w = shared.watch { _ in }
+        inner.onAngle?(HingeAngle(degrees: 130))
+        let sweeps = shared.watchSweeps { heard.record($0) }
+
+        try shared.fold(to: 0, over: 0.8)
+
+        #expect(heard.log == ["began 130.0→0.0 over 0.8", "motor", "ended delivered"])
+        sweeps.cancel()
+        w.cancel()
+    }
+
+    @Test func `should tell sweep watchers a fold the guest refused or did not confirm`() {
+        let outcomes: [(HingeError, String)] = [(.toolFailed(status: 1), "rejected"), (.toolTimedOut, "unconfirmed")]
+        for (error, delivery) in outcomes {
+            let inner = Inner()
+            given(inner.hinge).angle().willReturn(HingeAngle(degrees: 130))
+            let motor = MockHingeMotor()
+            given(motor).fold(from: .any, to: .any, over: .any).willProduce { _, _, _ in throw error }
+            let shared = SharedHinge(inner: inner.hinge, motor: motor)
+            let heard = Sweeps()
+            let sweeps = shared.watchSweeps { heard.record($0) }
+
+            #expect(throws: error) { try shared.fold(to: 0, over: 0.8) }
+
+            #expect(heard.log == ["began 130.0→0.0 over 0.8", "ended \(delivery)"])
+            sweeps.cancel()
+        }
+    }
+
+    @Test func `should tell a cancelled sweep watcher nothing more`() throws {
+        let inner = Inner()
+        given(inner.hinge).angle().willReturn(HingeAngle(degrees: 130))
+        let motor = MockHingeMotor()
+        given(motor).fold(from: .any, to: .any, over: .any).willReturn()
+        let shared = SharedHinge(inner: inner.hinge, motor: motor)
+        let gone = Sweeps(), kept = Sweeps()
+        let a = shared.watchSweeps { gone.record($0) }
+        let b = shared.watchSweeps { kept.record($0) }
+        a.cancel()
+
+        try shared.fold(to: 0, over: 0.8)
+
+        #expect(gone.log.isEmpty)
+        #expect(kept.log.count == 2)
+        b.cancel()
+    }
+
+    /// Two clients folding at once: watchers hear the second sweep begin
+    /// only once the first has ended, as the guest plays them.
+    @Test func `should play one fold at a time`() {
+        let inner = Inner()
+        given(inner.hinge).angle().willReturn(nil)
+        let heard = Sweeps()
+        let motor = MockHingeMotor()
+        given(motor).fold(from: .any, to: .any, over: .any).willProduce { _, to, _ in
+            heard.append("motor \(to)")
+            Thread.sleep(forTimeInterval: 0.05)
+        }
+        let shared = SharedHinge(inner: inner.hinge, motor: motor)
+        let sweeps = shared.watchSweeps { heard.record($0) }
+
+        DispatchQueue.concurrentPerform(iterations: 2) { i in
+            try? shared.fold(to: i == 0 ? 0 : 180, over: 0.8)
+        }
+
+        let log = heard.log
+        #expect(log.count == 6)
+        for start in stride(from: 0, to: log.count - 2, by: 3) {
+            #expect(log[start].hasPrefix("began"))
+            #expect(log[start + 1].hasPrefix("motor"))
+            #expect(log[start + 2] == "ended delivered")
+        }
+        sweeps.cancel()
+    }
+
     @Test func `should keep one shared hinge per device set and device identifier`() {
         let udid = UUID().uuidString
         let a = SharedHinge.forDevice(udid, deviceSetPath: "/sets/a", make: { MockHinge() })

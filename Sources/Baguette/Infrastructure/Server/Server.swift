@@ -1632,8 +1632,13 @@ struct Server: Sendable {
         case .missingTarget: return "pose=closed|open|flat or angle=<0-180> is required"
         case .unknownPose(let pose): return "unknown pose \(pose): expected closed, open or flat"
         case .angleOutOfRange: return "angle must be a number from 0 to 180"
-        case .invalidDuration: return "duration must be a non-negative number of seconds"
+        case .invalidDuration: return "duration must be a number of seconds from 0 to 60"
         }
+    }
+
+    /// The 3D socket's answer to a `set_pose` it cannot play.
+    static func poseErrorFrame(_ error: HingeCommandError) -> String {
+        #"{"ok":false,"error":"\#(jsonEscape(hingeCommandMessage(error)))"}"#
     }
 
     /// One hinge sample as the stream socket pushes it to the page.
@@ -2978,7 +2983,7 @@ struct Server: Sendable {
                     }
                     // The pose picker: the device's own hinge is swept
                     // there (a second or so, off this loop); the book
-                    // follows the hinge samples as it goes.
+                    // plays the sweep as it goes.
                     if foldable != nil, let pose = try Device3DPose.parsing(json: Data(line.utf8)) {
                         if case .fold(let degrees, let duration) = pose {
                             let target = String(degrees)
@@ -2992,6 +2997,9 @@ struct Server: Sendable {
                         }
                         continue
                     }
+                } catch let error as HingeCommandError {
+                    try? await outbound.write(.text(Self.poseErrorFrame(error)))
+                    continue
                 } catch {
                     try? await outbound.write(.text(
                         #"{"ok":false,"error":"invalid 3D camera"}"#

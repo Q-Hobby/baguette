@@ -47,8 +47,15 @@ final class SharedHinge: Hinge, @unchecked Sendable {
     /// is stale — clients rebind as soon as it does — so unless the last
     /// sample is the angle asked for (a watch heard the fold land), the
     /// next `angle()` asks the guest again.
+    ///
+    /// Sweep watchers hear the sweep as it goes to the motor and how it
+    /// was delivered once it returns. Folds play one at a time, so each
+    /// starts from where the last left the hinge and its watchers hear
+    /// them in the order the guest plays them.
     func fold(to degrees: Double, over duration: TimeInterval) throws {
         guard let motor else { throw HingeError.toolMissing }
+        folding.lock()
+        defer { folding.unlock() }
         let from = angle()?.degrees ?? degrees
         defer {
             lock.lock()
@@ -59,7 +66,31 @@ final class SharedHinge: Hinge, @unchecked Sendable {
             }
             lock.unlock()
         }
-        try motor.fold(from: from, to: degrees, over: duration)
+        announce(.began(HingeSweep(from: from, to: degrees, duration: duration)))
+        do {
+            try motor.fold(from: from, to: degrees, over: duration)
+        } catch {
+            announce(.ended(PoseDelivery(failure: error)))
+            throw error
+        }
+        announce(.ended(.delivered))
+    }
+
+    private let folding = NSLock()
+    private var sweepSubscribers: [UUID: @Sendable (HingeSweepEvent) -> Void] = [:]
+
+    func watchSweeps(onSweep: @escaping @Sendable (HingeSweepEvent) -> Void) -> any HingeWatch {
+        let id = UUID()
+        lock.withLock { sweepSubscribers[id] = onSweep }
+        return Subscription { [weak self] in
+            guard let self else { return }
+            self.lock.withLock { self.sweepSubscribers[id] = nil }
+        }
+    }
+
+    private func announce(_ event: HingeSweepEvent) {
+        let targets = lock.withLock { Array(sweepSubscribers.values) }
+        for target in targets { target(event) }
     }
 
     /// How close a sample must be to a fold's angle to show it landed;

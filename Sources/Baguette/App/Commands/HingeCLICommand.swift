@@ -22,7 +22,7 @@ struct HingeCLICommand: ParsableCommand {
     @Option(help: "An angle in degrees, 0–180")
     var angle: String?
 
-    @Option(help: "Seconds the sweep takes (default: Device Hub's 0.8)")
+    @Option(help: "Seconds the sweep takes, 0–60 (default: Device Hub's 0.8)")
     var duration: String?
 
     func run() throws {

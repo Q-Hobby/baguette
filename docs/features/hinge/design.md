@@ -65,6 +65,18 @@ sample is the angle asked for (a socket's watch heard the fold land), the
 fold then forgets it, delivered or not, so the next `GET /hinge` or stream
 bind reads the guest rather than the hinge as it was before the fold.
 
+Folds on one device play one at a time. Each one tells its sweep watchers
+(`Hinge.watchSweeps`) the sweep (`HingeSweep`, the same from, to and
+60 Hz ease-out samples `HingeControl` sends) as it goes to the motor, and
+`PoseDelivery` once it returns. A live 3D book plays that sweep as
+commanded (`PosedHinge`). The readings can lag: on a loaded EC2 Mac, every
+sample of a 0.8 s sweep arrived, in order, over about 5 s. When the sweep is
+delivered, the book stands at the target until a reading lands within
+0.5°. If a reading turns back or leaves the sweep's range first, the book
+follows it, because that is a fold made elsewhere. If the sweep was
+refused or timed out, the book follows the readings at once. The readings
+themselves (`angle()`, `watch`) never carry commanded angles.
+
 A background `simctl spawn` of the tool (`&` in a subshell) once
 delivered nothing — run it in the foreground / keep `serve` alive.
 Spawned guest tools need `codesign -s -` and the iphonesimulator SDK

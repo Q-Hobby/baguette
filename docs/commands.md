@@ -452,7 +452,7 @@ baguette hinge --udid <udid> [--pose <pose>] [--angle <angle>] [--duration <dura
 | `--udid` | yes |  | Simulator UDID |
 | `--pose` |  |  | A pose: closed (0°), open (130°) or flat (180°) |
 | `--angle` |  |  | An angle in degrees, 0–180 |
-| `--duration` |  |  | Seconds the sweep takes (default: Device Hub's 0.8) |
+| `--duration` |  |  | Seconds the sweep takes, 0–60 (default: Device Hub's 0.8) |
 
 ## baguette shake
 

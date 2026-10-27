@@ -47,6 +47,15 @@ struct GuestHingeTests {
         return (hinge, sub, captures)
     }
 
+    /// Sweeps are played through `SharedHinge`'s motor; the reader
+    /// hears only the guest's samples.
+    @Test func `should hear of no sweeps, since it only reads`() {
+        let (hinge, sub, _) = makeHinge { _ in }
+        let watch = hinge.watchSweeps { _ in Issue.record("a reader heard a sweep") }
+        watch.cancel()
+        verify(sub).run(executable: .any, arguments: .any, onBytes: .any, onExit: .any).called(0)
+    }
+
     @Test func `should read this device's hinge with HingeControl in the guest`() {
         let (hinge, _, captures) = makeHinge { c in c.onBytes?(Data(self.sample.utf8)) }
         _ = hinge.angle()

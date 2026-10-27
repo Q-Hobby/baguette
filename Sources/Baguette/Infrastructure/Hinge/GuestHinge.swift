@@ -94,6 +94,15 @@ final class GuestHinge: Hinge, @unchecked Sendable {
         throw HingeError.toolMissing
     }
 
+    /// Nor does it play sweeps to tell of.
+    func watchSweeps(onSweep: @escaping @Sendable (HingeSweepEvent) -> Void) -> any HingeWatch {
+        Unheard()
+    }
+
+    private struct Unheard: HingeWatch {
+        func cancel() {}
+    }
+
     func watch(onAngle: @escaping @Sendable (HingeAngle) -> Void) -> any HingeWatch {
         let watch = Watch(child: subprocess())
         guard let arguments = arguments(verb: "watch-angle") else {
