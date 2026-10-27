@@ -169,12 +169,16 @@ A booted Duo's page opens the live 3D stream straight on (`fixed`: no orbiting,
 no stage tools; the cube button turns the book and sets it back) and never shows
 the flat chrome; a shut-down Duo still gets the flat chrome for its power card.
 The 3D socket binds **both** panels (`RenderedFoldable`) and the shared hinge,
-and poses the book from every sample (`FoldPose`): the clip runs from flat at
+and poses the book at the hinge's angle (`FoldPose`): the clip runs from flat at
 its start to shut at `shutTime`, and because it raises the left half alone the
 whole device turns back by half the fold above the open pose — the centred bend
 Device Hub draws — handing over as the book shuts so the cover ends facing the
 camera. With no hinge reading the book is shown shut, as the device boots, until
-the hinge speaks.
+the hinge speaks. The angle is the hinge's own reading, except during a sweep
+this `serve` plays (`POST /hinge`, `set_pose`). The book plays that sweep as
+commanded, at 60 Hz, then settles on the reading (`PosedHinge`). The readings
+can arrive seconds late on a loaded host. The lit screen, its texture and the
+`pieces` follow the posed angle across 90°.
 
 Input goes through `screen_quad` as on a phone, but a bent screen is not one
 quad: the server sends `pieces` — the two halves of the unfolded screen or the
@@ -201,9 +205,9 @@ into step.
 
 **Pose picker.** A pick sends `{"type":"set_pose","hingeDegrees":0}` on the 3D
 socket → `Hinge.fold`, swept over Device Hub's 0.8 s by `HingeControl` inside the
-guest; SpringBoard swaps panels and the book follows the hinge samples as it
-goes. `screen_quad` carries `pose: {hingeDegrees}` so the nearest pose lights
-up. The **hinge slider** sends `{"type":"set_pose","hingeDegrees":72,"duration":0}`
+guest; the book plays the sweep as it goes and SpringBoard swaps panels.
+`screen_quad` carries `pose: {hingeDegrees}` so the nearest pose lights up. The
+**hinge slider** sends `{"type":"set_pose","hingeDegrees":72,"duration":0}`
 a few times a frame at most, and the hinge goes straight to the thumb (no
 sweep); pose requests on a socket play in order and skip what the burst has
 already passed, so the hinge catches up to the thumb rather than replaying its

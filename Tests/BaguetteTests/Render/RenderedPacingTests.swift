@@ -48,6 +48,7 @@ struct RenderedPacingTests {
         given(cover).stop().willReturn()
         given(hinge).angle().willReturn(HingeAngle(degrees: 180))
         given(hinge).watch(onAngle: .any).willReturn(watch)
+        given(hinge).watchSweeps(onSweep: .any).willReturn(MockHingeWatch.unheard())
         given(watch).cancel().willReturn()
         given(scene).update(hingeDegrees: .any).willReturn()
         given(scene).renderFrame(screens: .any).willProduce { screens in

@@ -24,6 +24,13 @@ protocol Hinge: Sendable {
     /// actually at. A device without a hinge delivers nothing.
     func watch(onAngle: @escaping @Sendable (HingeAngle) -> Void) -> any HingeWatch
 
+    /// Every sweep baguette plays on this hinge (`fold`), as it begins and
+    /// as it ends, until the watch is cancelled. A 3D book shows such a
+    /// sweep as commanded (`PosedHinge`): the samples `watch` delivers
+    /// can come back seconds late on a loaded host. Folds made elsewhere
+    /// are heard only through `watch`.
+    func watchSweeps(onSweep: @escaping @Sendable (HingeSweepEvent) -> Void) -> any HingeWatch
+
     /// Move the hinge to `degrees` over `duration` seconds — Device Hub's
     /// pose picker, from baguette. Throws when the device cannot be
     /// driven (no `HingeControl`, or the guest refused).

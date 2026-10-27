@@ -120,7 +120,11 @@ true screen position away from Front.
 A foldable's 3D socket binds both panels and the hinge, poses the clip at
 `(180 − angle) / 180 · shutTime` and turns the whole device back by half the
 fold above the open pose (`FoldPose`); `set_3d_camera`'s `orientation` rolls
-the model to stand that way (`InterfaceRoll`).
+the model to stand that way (`InterfaceRoll`). The angle is the hinge's
+reading. During a sweep `serve` plays, it is that sweep's 60 Hz curve until
+the readings catch up (`PosedHinge`, see
+[Hinge design](../hinge/design.md#how-the-hinge-is-driven)). Each pose
+recomposes the frame, and frame metadata carries the posed angle.
 
 ## Browser: frames, export and density
 
